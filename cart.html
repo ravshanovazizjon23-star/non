@@ -1,0 +1,337 @@
+
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Savat — Baraka Non</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .basket-page {
+      max-width: 950px;
+      margin: 45px auto;
+      padding: 20px;
+      min-height: 55vh;
+    }
+
+    .basket-page h1 {
+      color: #542d1c;
+      margin-bottom: 10px;
+    }
+
+    .basket-intro {
+      color: #87776b;
+      margin-bottom: 25px;
+    }
+
+    .basket-product {
+      display: grid;
+      grid-template-columns: 90px 1fr auto;
+      align-items: center;
+      gap: 18px;
+      padding: 17px 0;
+      border-bottom: 1px solid #eee2d5;
+    }
+
+    .basket-product img {
+      width: 90px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 10px;
+    }
+
+    .basket-product h3 {
+      color: #542d1c;
+      font-size: 17px;
+    }
+
+    .basket-product p {
+      color: #87776b;
+      font-size: 14px;
+    }
+
+    .basket-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .basket-controls button,
+    .remove-item {
+      padding: 5px 11px;
+      border: 1px solid #eee2d5;
+      border-radius: 6px;
+      background: #fff8ee;
+      color: #542d1c;
+      cursor: pointer;
+    }
+
+    .basket-price {
+      text-align: right;
+      font-weight: bold;
+      color: #542d1c;
+    }
+
+    .remove-item {
+      margin-top: 8px;
+      color: #a33;
+      background: white;
+    }
+
+    .basket-summary {
+      margin-top: 25px;
+      padding: 22px;
+      border-radius: 12px;
+      background: #fff8ee;
+    }
+
+    .basket-total {
+      display: flex;
+      justify-content: space-between;
+      gap: 15px;
+      font-size: 21px;
+      font-weight: bold;
+      color: #542d1c;
+      margin-bottom: 20px;
+    }
+
+    .basket-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .back-link {
+      display: inline-block;
+      margin-top: 22px;
+      color: #542d1c;
+      font-weight: bold;
+    }
+
+    .basket-empty {
+      padding: 45px 10px;
+      text-align: center;
+      background: #fff8ee;
+      border-radius: 12px;
+    }
+
+    .basket-empty .emoji {
+      font-size: 48px;
+    }
+
+    @media (max-width: 550px) {
+      .basket-product {
+        grid-template-columns: 65px 1fr;
+        gap: 12px;
+      }
+
+      .basket-product img {
+        width: 65px;
+        height: 70px;
+      }
+
+      .basket-price {
+        grid-column: 2;
+        text-align: left;
+      }
+
+      .basket-total {
+        font-size: 17px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="topbar">🥖 BARAKA NON — Yangi va mazali nonlar</div>
+
+  <header class="header">
+    <a href="index.html" class="logo">🥖 BARAKA <span>NON</span></a>
+    <a href="index.html#products" class="primary-button">
+      Nonlarni tanlash
+    </a>
+  </header>
+
+  <main class="basket-page">
+    <h1>🛒 Xarid savati</h1>
+    <p class="basket-intro">
+      Savatga qo‘shgan mahsulotlaringiz shu yerda ko‘rinadi.
+    </p>
+
+    <div id="basketItems"></div>
+
+    <div class="basket-summary" id="basketSummary">
+      <div class="basket-total">
+        <span>Jami summa:</span>
+        <span id="basketTotal">0 so‘m</span>
+      </div>
+
+      <div class="basket-actions">
+        <button class="primary-button" id="buyButton">
+          Buyurtmani rasmiylashtirish
+        </button>
+
+        <button class="primary-button" id="clearBasket"
+          style="background:#87776b">
+          Savatni tozalash
+        </button>
+      </div>
+    </div>
+
+    <a href="index.html#products" class="back-link">
+      ← Nonlar ro‘yxatiga qaytish
+    </a>
+  </main>
+
+  <script>
+    const STORAGE_KEY = "barakaNonCart";
+
+    const basketItems = document.getElementById("basketItems");
+    const basketTotal = document.getElementById("basketTotal");
+    const basketSummary = document.getElementById("basketSummary");
+
+    function readCart() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+        return saved && typeof saved === "object" &&
+          !Array.isArray(saved) ? saved : {};
+      } catch {
+        return {};
+      }
+    }
+
+    function saveCart(cart) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(cart));
+    }
+
+    function money(amount) {
+      return Number(amount).toLocaleString("uz-UZ") + " so‘m";
+    }
+
+    function renderBasket() {
+      const cart = readCart();
+      const items = Object.values(cart).filter(item =>
+        item &&
+        Number.isFinite(Number(item.price)) &&
+        Number(item.price) >= 0 &&
+        Number.isInteger(Number(item.quantity)) &&
+        Number(item.quantity) > 0
+      );
+
+      if (items.length === 0) {
+        basketItems.innerHTML = `
+          <div class="basket-empty">
+            <div class="emoji">🥖</div>
+            <h2>Savatingiz hozircha bo‘sh</h2>
+            <p>Avval asosiy sahifadan mazali non tanlang.</p>
+            <br>
+            <a href="index.html#products" class="primary-button">
+              Nonlarni ko‘rish
+            </a>
+          </div>
+        `;
+
+        basketSummary.style.display = "none";
+        return;
+      }
+
+      basketSummary.style.display = "block";
+
+      basketItems.innerHTML = items.map(item => `
+        <article class="basket-product">
+          <img src="${escapeHTML(item.image || "")}"
+               alt="${escapeHTML(item.name || "Non")}"
+               onerror="this.style.visibility='hidden'">
+
+          <div>
+            <h3>${escapeHTML(item.name || "Non")}</h3>
+            <p>${money(Number(item.price))} / dona</p>
+
+            <div class="basket-controls">
+              <button data-minus="${escapeHTML(String(item.id))}"
+                aria-label="Kamaytirish">−</button>
+
+              <span>${Number(item.quantity)}</span>
+
+              <button data-plus="${escapeHTML(String(item.id))}"
+                aria-label="Ko‘paytirish">+</button>
+            </div>
+          </div>
+
+          <div class="basket-price">
+            ${money(Number(item.price) * Number(item.quantity))}
+            <br>
+            <button class="remove-item"
+              data-remove="${escapeHTML(String(item.id))}">
+              O‘chirish
+            </button>
+          </div>
+        </article>
+      `).join("");
+
+      const total = items.reduce(
+        (sum, item) => sum + Number(item.price) * Number(item.quantity),
+        0
+      );
+
+      basketTotal.textContent = money(total);
+    }
+
+    function escapeHTML(value) {
+      return String(value).replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      })[char]);
+    }
+
+    basketItems.addEventListener("click", event => {
+      const button = event.target.closest("button");
+      if (!button) return;
+
+      const cart = readCart();
+
+      if (button.dataset.plus !== undefined) {
+        const item = cart[button.dataset.plus];
+        if (item && Number(item.quantity) < 99) item.quantity++;
+      }
+
+      if (button.dataset.minus !== undefined) {
+        const item = cart[button.dataset.minus];
+        if (item) {
+          item.quantity--;
+          if (item.quantity <= 0) delete cart[button.dataset.minus];
+        }
+      }
+
+      if (button.dataset.remove !== undefined) {
+        delete cart[button.dataset.remove];
+      }
+
+      saveCart(cart);
+      renderBasket();
+    });
+
+    document.getElementById("clearBasket").addEventListener("click", () => {
+      if (confirm("Savatdagi barcha mahsulotlarni o‘chirasizmi?")) {
+        saveCart({});
+        renderBasket();
+      }
+    });
+
+    document.getElementById("buyButton").addEventListener("click", () => {
+      if (Object.keys(readCart()).length === 0) return;
+
+      // Asosiy saytdagi buyurtma formasini ochish uchun:
+      window.location.href = "index.html#products";
+      alert("Mahsulotlar savatda saqlanadi. Buyurtmani yakunlash uchun asosiy saytdagi buyurtma formasidan foydalaning.");
+    });
+
+    renderBasket();
+  </script>
+
+</body>
+</html>
